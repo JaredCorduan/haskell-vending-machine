@@ -4,6 +4,4 @@ This is a Haskell implementation of the [formal specification](https://github.co
 The Vending Machine STS sells sodas and it comprises of an enviroinment, valid states and two signals that trigger the transtition from one valid state to another, namely: a) *Deposit* an amount and b) *Push* the button of the vending machine in order to get a soda. More details you can find in the formal specification above.
 
 The basic module Vending (in the src directory) implements the Vending Machine STS. In the test directory you can find the unit tests described in the formal specification document, implemented with the [Tasty](https://hackage.haskell.org/package/tasty) framework.
-In order to run the tests, simply clone this repo and then run
-``` stack test
-```
+In order to run the tests, simply clone this repo and then run `stack test`
