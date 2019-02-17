@@ -34,7 +34,7 @@ resolver: lts-13.7
 #  - wai
 packages:
 - .
-- /home/nikos/mynew_backup/backup/IOHK/Projects/Priviledge/github/fm-ledger-rules/specs/semantics/hs
+#- /home/nikos/mynew_backup/backup/IOHK/Projects/Priviledge/github/fm-ledger-rules/specs/semantics/hs
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
@@ -42,7 +42,11 @@ packages:
 extra-deps:
 - sequence-0.9.8@sha256:8516088c0b98ea810786e680db22d5d0b70c51ba60631a3d1fe83c45e8ebe8bf
 - tasty-hedgehog-0.2.0.0@sha256:83a8b777fa472040979e44dba43c32441f55d5ddb9641a4d53deee4b0e09fa34
-# - small-steps-0.1.0.0
+- git: https://github.com/input-output-hk/fm-ledger-rules/
+  commit: a6f4c330cc42c5a3ce5dd8db199ea417cf2a018b
+  subdirs:
+  - specs/semantics/hs
+
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
