@@ -73,4 +73,10 @@ unitTests = testGroup "Unit tests"
             @?= 
             [OutOfSoda, SmallDeposit]
 
+       ,testCase "Test Small Deposit and Out of Order" $
+            (case applySTS @VMACHINE $ TRC (VEnv False 1, VState 0 1, Push) of
+                Left error -> error
+                Right state -> [])
+            @?= 
+            [SmallDeposit, OutOfOrder]
     ]

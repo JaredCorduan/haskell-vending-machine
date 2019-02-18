@@ -74,6 +74,6 @@ vendingRule = do
       Push ->
         do
           p == True ?! OutOfOrder
-          p == True && c <= t ?! SmallDeposit
-          p == True && sd > 0 ?! OutOfSoda    
+          c <= t ?! SmallDeposit
+          sd > 0 ?! OutOfSoda    
           return $ VState (t-c) (sd-1)
