@@ -41,11 +41,11 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - sequence-0.9.8@sha256:8516088c0b98ea810786e680db22d5d0b70c51ba60631a3d1fe83c45e8ebe8bf
-- tasty-hedgehog-0.2.0.0@sha256:83a8b777fa472040979e44dba43c32441f55d5ddb9641a4d53deee4b0e09fa34
-- git: https://github.com/input-output-hk/fm-ledger-rules/
-  commit: a6f4c330cc42c5a3ce5dd8db199ea417cf2a018b
+- hedgehog-1.0@sha256:440dafedac48a34eac3871f8622b215462cfc0708536cb0458b7a8cf38247c69
+- git: https://github.com/input-output-hk/cardano-ledger-specs/
+  commit: 2f68ce26c684b16dc4fb6f08d3e44cf981d502bb
   subdirs:
-  - specs/semantics/hs
+  - byron/semantics/executable-spec/
 
 
 # Override default flag values for local packages and extra-deps

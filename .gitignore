@@ -1,3 +1,11 @@
 .stack-work/
 vending-machine.cabal
 *~
+Vending.aux
+Vending.fdb_latexmk
+Vending.fls
+Vending.log
+Vending.pdf
+Vending.ptb
+Vending.tex
+

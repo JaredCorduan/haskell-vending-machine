@@ -8,7 +8,6 @@ where
 import Vending
 import Test.Tasty
 import Test.Tasty.HUnit
-import Test.Tasty.Hedgehog
 
 import Control.State.Transition
   ( TRC (TRC)
@@ -32,51 +31,37 @@ unitTests :: TestTree
 unitTests = testGroup "Unit tests"
     [
        testCase "Test Initial State" $
-            (case applySTS @VMACHINE $ IRC (VEnv True 1) of
-                Left error -> VState 0 0
-                Right state -> state)
+            (applySTS @VMACHINE $ IRC (VEnv True 1))
             @?= 
-            VState 0 initNumOfSodas
+            (Right (VState 0 initNumOfSodas))
 
        ,testCase "Test Deposit" $
-            (case applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 1, Deposit 2) of
-                Left error -> VState 0 0
-                Right state -> state)
+            (applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 1, VSignal False 2))
             @?= 
-            VState 2 1
+            (Right (VState 2 1))
 
        ,testCase "Test Get Soda" $
-            (case applySTS @VMACHINE $ TRC (VEnv True 1, VState 1 1, Push) of
-                Left error -> VState 0 initNumOfSodas
-                Right state -> state)
+            (applySTS @VMACHINE $ TRC (VEnv True 1, VState 1 1, VSignal True 0))
             @?= 
-            VState 0 0
+            (Right (VState 0 0))
 
        ,testCase "Test Small Deposit" $
-            (case applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 1, Push) of
-                Left error -> error
-                Right state -> [])
+            (applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 1, VSignal True 0))
             @?= 
-            [SmallDeposit]
+            (Left [[NotDeposit], [SmallDeposit]])
 
        ,testCase "Test Out Of Soda" $
-            (case applySTS @VMACHINE $ TRC (VEnv True 1, VState 1 0, Push) of
-                Left error -> error
-                Right state -> [])
+            (applySTS @VMACHINE $ TRC (VEnv True 1, VState 1 0, VSignal True 0))
             @?= 
-            [OutOfSoda]
+            (Left [[NotDeposit], [OutOfSoda]])
 
        ,testCase "Test Small Deposit and No Soda" $
-            (case applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 0, Push) of
-                Left error -> error
-                Right state -> [])
+            (applySTS @VMACHINE $ TRC (VEnv True 1, VState 0 0, VSignal True 0))
             @?= 
-            [OutOfSoda, SmallDeposit]
+            (Left [[NotDeposit], [OutOfSoda, SmallDeposit]])
 
        ,testCase "Test Small Deposit and Out of Order" $
-            (case applySTS @VMACHINE $ TRC (VEnv False 1, VState 0 1, Push) of
-                Left error -> error
-                Right state -> [])
+            (applySTS @VMACHINE $ TRC (VEnv False 1, VState 0 1, VSignal True 0))
             @?= 
-            [SmallDeposit, OutOfOrder]
+            (Left [[OutOfOrder, NotDeposit], [SmallDeposit, OutOfOrder]])
     ]

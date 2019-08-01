@@ -49,5 +49,4 @@ tests:
     - vending-machine
     - tasty
     - tasty-hunit
-    - tasty-hedgehog
     - transformers
