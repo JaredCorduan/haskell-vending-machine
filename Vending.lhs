@@ -31,12 +31,14 @@
 %format LET (x) =  x
 %format CHECK (pred) (error) =  pred
 %format LET (x) =  x
-%format RULE (env) (state1) (sig) (state2) = env "\vdash" state1 "\trans{vend}{" sig "}" state2
-%format VEnv' (power) (cost) = "\left(\begin{array}{c}" power "\cr " cost "\end{array}\right)"
-%format VState' (tokens) (sodas) = "\left(\begin{array}{c}" tokens "\cr " sodas "\end{array}\right)"
-%format VSignal' (vend) (amnt) (sig) = (vend, amnt) = sig
-%format TRANSTYPE (name) (env) (state) (sig) =  " \_ \vdash {\_} \trans{vend}{\_} {\_} \subseteq \powerset ("env" \times "state" \times "sig" \times "state")"
+%format RULEVMACHINE (env) (state1) (sig) (state2) = env "\vdash" state1 "\trans{vend}{" sig "}" state2
+%format RULEDEDUCT (env) (state1) (sig) (state2) = env "\vdash" state1 "\trans{deduct}{" sig "}" state2
 % TODO - Why does trans{"name"} cause errors?
+%format SUBRULE (rule) (env) (state1) (sig) (state2) =  env "\vdash" state1 "\trans{deduct}{" sig "}" state2
+%format VEnv' (power) (cost) = "\left(\begin{array}{c}" power "\cr " cost "\end{array}\right)"
+%format DState' (tokens) (sodas) = "\left(\begin{array}{c}" tokens "\cr " sodas "\end{array}\right)"
+%format VSignal' (vend) (amnt) (sig) = (vend, amnt) = sig
+%format DEnv' (cost) = cost
 
 %else
 %format DATADEC (name) =  data name = name
@@ -45,10 +47,13 @@
 %format DATAEND =  "  } deriving (Eq, Show)"
 %format CHECK (pred) (error) =  pred ?! error
 %format LET (x) =  let x
-%format RULE (env) (state1) (tx) (state2) = "return $" state2
+%format RULEVMACHINE (env) (state1) (tx) (state2) = "return $" state2
+%format RULEDEDUCT (env) (state1) (tx) (state2) = "return $" state2
+%format SUBRULE (rule) (env) (state1) (sig) (state2) =  state2" <- trans @"rule" $ TRC "(env, state1, sig)
 %format VState' = VState
 %format VSignal' (vend) (amnt) (sig) =  "let " VSignal vend amnt = sig
-%format TRANSTYPE (name) (env) (state) (sig) =
+%format DEnv' = "DEnv "
+%format DState' (tokens) (sodas) =  DState " " tokens " " sodas
 %endif
 
 \begin{document}
@@ -62,27 +67,84 @@
 
 %if style == newcode
 
-> {-# LANGUAGE TypeSynonymInstances #-}
-> {-# LANGUAGE FlexibleInstances #-}
+> {-# LANGUAGE EmptyDataDecls #-}
+> {-# LANGUAGE MultiParamTypeClasses #-}
+> {-# LANGUAGE ScopedTypeVariables #-}
+> {-# LANGUAGE TypeApplications #-}
 > {-# LANGUAGE TypeFamilies #-}
 >
 > module Vending where
 >
 >
 > import Control.State.Transition
->   ( Environment
->   , PredicateFailure
->   , STS
->   , Signal
->   , State
->   , TransitionRule
->   , initialRules
->   , transitionRules
->   , TRC (TRC)
->   , judgmentContext
->   , (?!)
->   )
 >
+
+%endif
+
+\begin{figure}
+
+> -- DEDUCT Transition Types
+>
+> DATADEC DEnv
+> DATAFIELD1 _dcost Int
+> DATAEND
+>
+> DATADEC DState
+> DATAFIELD1 _tokens Int
+> DATAFIELDN _sodas Int
+> DATAEND
+>
+
+$$
+\_ \vdash {\_} \trans{deduct}{} {\_}
+\subseteq
+\powerset (\Varid{DEnv} \times \Varid{DState} \times \Varid{DState})
+$$
+
+\caption{Vending Machine Transition Types}
+\end{figure}
+
+%if style == newcode
+
+> data DEDUCT
+> instance STS DEDUCT where
+>     type Environment DEDUCT = DEnv
+>     type State DEDUCT = DState
+>     type Signal DEDUCT = ()
+>
+>     data PredicateFailure DEDUCT
+>       = SmallDeposit
+>       | OutOfSoda
+>       deriving (Eq, Show)
+>
+>     initialRules = []
+>     transitionRules = [deduct]
+>
+> deduct :: TransitionRule DEDUCT
+> deduct = do
+>   TRC (DEnv c, DState t sd, _) <- judgmentContext
+
+%endif
+
+\begin{figure}
+\mathhs
+\begin{equation}\label{eq:deduct-rule}
+\inference[deduct-rule]
+{%
+>   CHECK (c  <= t) (SmallDeposit)
+>   CHECK (sd  > 0) (OutOfSoda)
+>
+}{%
+>   RULEVMACHINE (DEnv' c) (DState' t sd) (()) (DState' ((t-c)) ((sd-1)))
+>
+}
+\end{equation}
+
+\caption{Deduct Transitions}
+\end{figure}
+
+%if style == newcode
+
 > initNumOfSodas :: Int
 > initNumOfSodas = 100
 >
@@ -94,22 +156,21 @@
 > -- VEND Transition Types
 >
 > DATADEC VEnv
-> DATAFIELD1 power Bool
-> DATAFIELDN cost Int
-> DATAEND
->
-> DATADEC VState
-> DATAFIELD1 tokens Int
-> DATAFIELDN sodas Int
+> DATAFIELD1 _power Bool
+> DATAFIELDN _cost Int
 > DATAEND
 >
 > DATADEC VSignal
-> DATAFIELD1 vend Bool
-> DATAFIELDN amnt Int
+> DATAFIELD1 _vend Bool
+> DATAFIELDN _amnt Int
 > DATAEND
 >
-> TRANSTYPE VMACHINE VEnv VState VSignal
 
+$$
+\_ \vdash {\_} \trans{vend}{\_} {\_}
+\subseteq
+\powerset (\Varid{VEnv} \times \Varid{DState} \times \Varid{VSignal} \times \Varid{DState})
+$$
 \caption{Vending Machine Transition Types}
 \end{figure}
 
@@ -118,22 +179,23 @@
 > data VMACHINE
 > instance STS VMACHINE where
 >     type Environment VMACHINE = VEnv
->     type State VMACHINE = VState
+>     type State VMACHINE = DState
 >     type Signal VMACHINE = VSignal
 >
 >     data PredicateFailure VMACHINE
->       = SmallDeposit
->       | OutOfSoda
->       | OutOfOrder
+>       = OutOfOrder
 >       | NotPush
 >       | NotDeposit
 >       | NonZeroAmnt
+>       | DeductFailure (PredicateFailure DEDUCT)
 >       deriving (Eq, Show)
 >
->     initialRules = [return $ VState 0 initNumOfSodas ]
+>     initialRules = [return $ DState 0 initNumOfSodas ]
 >
 >     transitionRules = [vendDeposit, vendPush]
 >
+> instance Embed DEDUCT VMACHINE where
+>   wrapFailed = DeductFailure
 
 %endif
 
@@ -142,7 +204,7 @@
 
 > vendDeposit :: TransitionRule VMACHINE
 > vendDeposit = do
->   TRC (VEnv p _, VState t sd, sig) <- judgmentContext
+>   TRC (VEnv p _, DState t sd, sig) <- judgmentContext
 
 %endif
 
@@ -156,7 +218,7 @@
 >   CHECK (p == True) (OutOfOrder)
 >
 }{%
->   RULE (VEnv' p c) (VState' t sd) (sig) (VState' (t+amnt) sd)
+>   RULEVMACHINE (VEnv' p c) (DState' t sd) (sig) (DState' ((t+amnt)) (sd))
 >
 }
 \end{equation}
@@ -167,7 +229,7 @@
 
 > vendPush :: TransitionRule VMACHINE
 > vendPush = do
->   TRC (VEnv p c, VState t sd, sig) <- judgmentContext
+>   TRC (VEnv p c, DState t sd, sig) <- judgmentContext
 
 %endif
 
@@ -177,11 +239,10 @@
 >   VSignal' vend amnt sig
 >   CHECK (amnt == 0) (NonZeroAmnt)
 >   CHECK (p == True) (OutOfOrder)
->   CHECK (c <= t) (SmallDeposit)
->   CHECK (sd > 0) (OutOfSoda)
+>   SUBRULE DEDUCT (DEnv' c) (DState' t sd) (()) (DState' t' sd')
 >
 }{%
->   RULE (VEnv' p c) (VState' t sd) (sig) (VState' (t-c) (sd-1))
+>   RULEVMACHINE (VEnv' p c) (DState' t sd) (sig) (DState' t' sd')
 >
 }
 \end{equation}
